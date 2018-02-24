@@ -10,8 +10,8 @@ import socket
 
 class MotorClient():
 
-    def __init__(self, articulation_ips):
-        self.articulation_ips = articulation_ips
+    def __init__(self, articulations_config):
+        self.articulations_config = articulations_config
 
     def send_socket(self, message, current_socket):
         bytes_sent = 0
@@ -37,9 +37,10 @@ class MotorClient():
     def create_connection(self, ip):
         try:
             current_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(5)
             current_socket.connect((ip, 23))
             return current_socket
-        except e:
+        except BaseException as e:
             print(f"Connection to IP {ip} was unsucccesful due to '{e}'")
             return None
 
@@ -64,13 +65,13 @@ class MotorClient():
                     print(f"Problem receiving positon from articulation in IP {ip}")
             else:
                 print(f"Problem sending positon request to articulation in IP {ip}")
-            disconnect(socket)
+            self.disconnect(socket)
         else:
             print(f"Problem connecting to articulation with IP {ip}")
         return position_as_float
 
-    def set_position_(self, position, index):
-        ip = self.articulation_ips[index]
+    def set_position(self, position, index):
+        ip = self.articulations_config[index]['ip']
         socket = self.create_connection(ip)
         position_as_float = None
         if(socket is not None):
@@ -78,14 +79,15 @@ class MotorClient():
             position_message_byte = bytearray()
             position_message_byte.extend(map(ord, possition_message))
             successful = self.send_socket(position_message_byte, socket)
-            if(successful):
-                return True
-            else:
-                return False
+            self.disconnect(socket)
+            if not(successful):
+                raise ValueError(f"Error trying to set position {position} to IP {ip}")
+        else:
+            raise ValueError(f"Error trying to connect to IP {ip}")
 
     def get_articulation_positions(self):
         articulation_positions = []
-        for articulation_ip in self.articulation_ips:
-            articulation_position = self.get_position(articulation_ip)
+        for articulation_config in self.articulations_config:
+            articulation_position = self.get_position(articulations_config['ip'])
             articulation_positions.insert(len(articulation_positions), articulation_position)
         return articulation_positions

@@ -47,6 +47,11 @@ RUN cd /home/daemon && \
   ./setup.py install
 
 RUN cd /home/daemon && \
+  git clone https://github.com/pygae/clifford.git && \
+  cd clifford && \
+  python setup.py install
+
+RUN cd /home/daemon && \
   mkdir robot-trajectory-server
 
 COPY . /home/daemon/robot-trajectory-server
