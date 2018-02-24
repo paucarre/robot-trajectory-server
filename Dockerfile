@@ -42,6 +42,11 @@ RUN ["bash", "-c", "cd /home/daemon && \
   conda clean --all -y"]
 
 RUN cd /home/daemon && \
+  git clone https://github.com/paucarre/robot-fabrik-cga.git && \
+  cd robot-fabrik-cga && \
+  ./setup.py install
+
+RUN cd /home/daemon && \
   mkdir robot-trajectory-server
 
 COPY . /home/daemon/robot-trajectory-server
@@ -50,6 +55,8 @@ RUN sudo chown -R daemon: /home/daemon/robot-trajectory-server && \
   sudo chmod -R u+w /home/daemon/robot-trajectory-server
 
 ENV ROBOT_TRAJECTORY_SERVER_SETTINGS='../conf/settings.conf'
+
+RUN conda install --yes -c conda-forge uwsgi
 
 ENTRYPOINT ["bash", "-c", "cd /home/daemon/robot-trajectory-server && \
   source activate pytorch && \

@@ -52,7 +52,7 @@ class MotorClient():
             return False
 
     def get_position(self, ip):
-        socket = create_connection(ip)
+        socket = self.create_connection(ip)
         position_as_float = None
         if(socket is not None):
             successful = send_socket(bytearray(b'?'), socket)
@@ -69,14 +69,15 @@ class MotorClient():
             print(f"Problem connecting to articulation with IP {ip}")
         return position_as_float
 
-    def set_position_(self, position, ip):
-        socket = create_connection(ip)
+    def set_position_(self, position, index):
+        ip = self.articulation_ips[index]
+        socket = self.create_connection(ip)
         position_as_float = None
         if(socket is not None):
             possition_message = f">{position}"
             position_message_byte = bytearray()
             position_message_byte.extend(map(ord, possition_message))
-            successful = send_socket(position_message_byte, socket)
+            successful = self.send_socket(position_message_byte, socket)
             if(successful):
                 return True
             else:
@@ -85,6 +86,6 @@ class MotorClient():
     def get_articulation_positions(self):
         articulation_positions = []
         for articulation_ip in self.articulation_ips:
-            articulation_position = get_position(articulation_ip)
+            articulation_position = self.get_position(articulation_ip)
             articulation_positions.insert(len(articulation_positions), articulation_position)
         return articulation_positions

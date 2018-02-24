@@ -15,7 +15,10 @@ build:
 	docker build -t $(DOCKER_IMAGE) .
 
 run: build
-	docker run -it -p 9090:9090 --add-host="localhost:192.168.65.1" -e ROBOT_TRAJECTORY_SERVER_SETTINGS='../conf/settings-dev.conf'  --user daemon robot-trajectory-server:latest
+	docker run -it -p 9090:9090 --add-host="localhost:192.168.65.1" -e ROBOT_TRAJECTORY_SERVER_SETTINGS='../conf/settings.conf'  --user daemon robot-trajectory-server:latest
+
+runlocal:
+	ROBOT_TRAJECTORY_SERVER_SETTINGS='../conf/settings.conf' bash -c './bin/start.sh'
 
 test:
 	cd src && \

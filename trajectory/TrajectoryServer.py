@@ -11,6 +11,8 @@ import datetime
 import json
 import sys
 import socket
+import traceback
+from MotorClient import MotorClient
 
 app = Flask(__name__)
 app.config.from_envvar('ROBOT_TRAJECTORY_SERVER_SETTINGS')
@@ -38,8 +40,13 @@ def move_to(articulation):
     if position is None:
         return Response("Bad Request: 'position' argument required", status=400)
     try:
-        position_as_int = float(positon)
+        articulation = int(articulation)
+        position_as_float= float(position)
     except BaseException as e:
-        return Response(f"Bad Request: 'position' with value {positon} is not a float", status=400)
-    print(content)
-    return(uuid)
+        return Response(f"Bad Request: 'position' with value {position} is not a float or articulation {articulation} is not an integer", status=400)
+    try:
+        motor_client.set_position_(position_as_float, articulation)
+        return Response(f"{position_as_float}", mimetype='text/html', status=200)
+    except BaseException as e:
+        error = traceback.format_exc()
+        return Response(f"Error communicating with articulation {articulation} with error {error}", status=500)
