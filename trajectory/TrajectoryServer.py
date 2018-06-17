@@ -13,10 +13,9 @@ import sys
 import socket
 import traceback
 from MotorClient import MotorClient
-from fabrik.FabrikSolver import FabrikSolver
-from fabrik.JointChain import JointChain
-from fabrik.Joint import Joint
-from fabrik.ConformalGeometricAlgebra import ConformalGeometricAlgebra
+from spherik.SpherikSolver import SpherikSolver
+from spherik.Joint import Joint
+from spherik.ConformalGeometricAlgebra import ConformalGeometricAlgebra
 import math
 
 app = Flask(__name__)
@@ -39,8 +38,7 @@ articulations_config = get_articulations_config()
 def get_joint_chain():
     first_joint = Joint(math.pi, 40.0)
     second_joint = Joint(math.pi, 40.0)
-    joint_chain = JointChain([first_joint, second_joint])
-    return joint_chain
+    return [first_joint, second_joint]
 
 def get_argument(argument, transform):
     value = request.args.get(argument)
@@ -62,12 +60,21 @@ def trajectory_endpoint():
         z = get_argument('z', lambda x: int(x))
     except ValueError as e:
         return Response(f"{e}", status=400)
-    joint_chain = get_joint_chain()
+    joints = get_joint_chain()
+    print(x, y, z)
     target_point = cga.point(x, y, z)
-    fabrik_solver = FabrikSolver()
-    positions = fabrik_solver.solve(joint_chain, target_point)
-    rotors = fabrik_solver.toRotors(positions)
-    angles = [cga.angleFromRotor(rotor) for rotor in rotors]
+    spherik_solver = SpherikSolver()
+    list_of_points = spherik_solver.solve(joints, target_point)
+    list_of_rotors = [spherik_solver.toRotors(points) for points in list_of_points]
+    list_of_angles = [[cga.angleFromRotor(rotor) for rotor in rotors] for rotors in list_of_rotors]
+    if len(list_of_angles) > 0:
+        return Response(f"{list_of_angles}", mimetype='text/html', status=200)
+    else:
+        return Response(f"Target position '{cga.toVector(target_point)}' not reacheable", status=500)
+
+@app.route('/move_end_effector', methods=['POST'])
+def move_end_effector_endpoint():
+    angles = request.get_json()
     motor_client = MotorClient(articulations_config)
     for articulation, angle in enumerate(angles):
         try:
@@ -75,7 +82,6 @@ def trajectory_endpoint():
         except BaseException as e:
             error = traceback.format_exc()
             return Response(f"Error communicating with articulation {articulation} to move it to position {angle} with error: {error}", status=500)
-    return Response(f"{angles}", mimetype='text/html', status=200)
 
 @app.route('/positions', methods=['GET'])
 def positions_endpoint():
